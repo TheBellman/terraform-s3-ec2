@@ -121,3 +121,5 @@ The core of the solution (in `main.tf`) is the policy attached to the IAM Instan
 ```
 
 This can be made even more precise as required - using the wildcard `List*` and `Get*` reveals quite a lot of information about the bucket and objects that an instance which just needs to be able to find and read objects won't need, so it is best to fine-tune the specific allowable resources. Similarly the resource key specified can easily be used to partition data and access to partitions of the data based on careful use of object keys.
+
+Further security can be put in place using a combination of a VPC Endpoint, and policies on the buckets themselves. By associating a VPC endpoint with the subnet containing the instance, we can put a policy on the bucket that requires (for example) "get" operations to be sourced via the VPC endpoint. This will then prevent the objects being downloaded from the AWS console, or by a privileged user from anywhere other than the subnet. An alternative would have been to _not_ use the VPC endpoint, in which case the policy would have to restrict access to the _public_ IP address range for the EC2 instances. 

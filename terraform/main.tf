@@ -33,6 +33,51 @@ resource "aws_s3_bucket" "s3_closed" {
   tags          = "${merge(map("Name","s3-closed"), var.tags)}"
 }
 
+
+resource "aws_s3_bucket_policy" "s3_open" {
+  bucket = "${aws_s3_bucket.s3_open.id}"
+  policy =<<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action":["s3:Get*"],
+      "Resource": "${aws_s3_bucket.s3_open.arn}/*",
+      "Condition" : {
+        "StringNotEquals": {
+          "aws:sourceVpce": "${aws_vpc_endpoint.s3endpoint.id}"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
+resource "aws_s3_bucket_policy" "s3_closed" {
+  bucket = "${aws_s3_bucket.s3_closed.id}"
+  policy =<<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+    "Effect": "Deny",
+      "Principal": "*",
+      "Action":["s3:Get*"],
+      "Resource": "${aws_s3_bucket.s3_closed.arn}/*",
+      "Condition" : {
+        "StringNotEquals": {
+          "aws:sourceVpce": "${aws_vpc_endpoint.s3endpoint.id}"
+        }
+      }
+    }
+  ]
+}
+POLICY
+}
+
 # ----------------------------------------------------------------------------------------
 # setup instance profile
 # ----------------------------------------------------------------------------------------

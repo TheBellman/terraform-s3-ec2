@@ -36,3 +36,9 @@ resource "aws_route_table_association" "s3ec2test" {
   subnet_id      = "${aws_subnet.s3ec2test.id}"
   route_table_id = "${aws_route_table.s3ec2test.id}"
 }
+
+resource "aws_vpc_endpoint" "s3endpoint" {
+  vpc_id       = "${aws_vpc.test_vpc.id}"
+  service_name = "com.amazonaws.${var.aws_region}.s3"
+  route_table_ids = ["${aws_route_table.s3ec2test.id}"]
+}
