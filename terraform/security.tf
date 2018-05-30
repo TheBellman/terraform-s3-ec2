@@ -95,13 +95,6 @@ resource "aws_security_group" "allow_ssh" {
     cidr_blocks = ["${var.inbound_cidr}"]
   }
 
-  egress {
-    from_port   = 1024
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["${var.inbound_cidr}"]
-  }
-
   tags = "${merge(map("Name","s3ec2test-ssh-in"), var.tags)}"
 }
 
@@ -110,25 +103,11 @@ resource "aws_security_group" "allow_http_out" {
   name_prefix = "s3ec2test"
   description = "Allow output http and https"
 
-  ingress {
-    from_port   = 1024
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   egress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["52.95.0.0/16"]
   }
 
   tags = "${merge(map("Name","s3ec2test-http-out"), var.tags)}"
