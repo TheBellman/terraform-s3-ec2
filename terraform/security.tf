@@ -11,6 +11,20 @@ resource "aws_default_security_group" "test_default" {
 }
 
 # ----------------------------------------------------------------------------------------
+#  lookups
+# ----------------------------------------------------------------------------------------
+
+data "aws_ip_ranges" "s3ip" {
+  regions = ["${var.aws_region}"]
+  services = ["s3"]
+}
+
+data "aws_ip_ranges" "s3ip-useast1" {
+  regions = ["us-east-1"]
+  services = ["s3"]
+}
+
+# ----------------------------------------------------------------------------------------
 #  NACL for the test subnet
 # ----------------------------------------------------------------------------------------
 
@@ -68,7 +82,7 @@ resource "aws_network_acl_rule" "http_out" {
   to_port        = 80
 }
 
-# allow pip3 requests
+# allow AWS requests
 resource "aws_network_acl_rule" "https_out" {
   network_acl_id = "${aws_network_acl.s3ec2test.id}"
   rule_number    = 210
@@ -98,10 +112,10 @@ resource "aws_security_group" "allow_ssh" {
   tags = "${merge(map("Name","s3ec2test-ssh-in"), var.tags)}"
 }
 
-resource "aws_security_group" "allow_http_out" {
+resource "aws_security_group" "allow_yum_out" {
   vpc_id      = "${aws_vpc.test_vpc.id}"
   name_prefix = "s3ec2test"
-  description = "Allow output http and https"
+  description = "Allow output http for yum"
 
   egress {
     from_port   = 80
@@ -110,5 +124,31 @@ resource "aws_security_group" "allow_http_out" {
     cidr_blocks = ["52.95.0.0/16"]
   }
 
-  tags = "${merge(map("Name","s3ec2test-http-out"), var.tags)}"
+  tags = "${merge(map("Name","s3ec2test-yum-out"), var.tags)}"
+}
+
+resource "aws_security_group" "allow_s3_out" {
+  vpc_id      = "${aws_vpc.test_vpc.id}"
+  name_prefix = "s3ec2test"
+  description = "Allow output https for AWS  S3 access"
+
+  # eu-west-2 prefix list
+  egress {
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+
+    cidr_blocks = ["${data.aws_ip_ranges.s3ip.cidr_blocks}" ]
+  }
+
+  # us-east-1 prefix list - this allows S3 from the cli to work, but not other things.
+  egress {
+    from_port = 443
+    to_port   = 443
+    protocol  = "tcp"
+
+    cidr_blocks = ["${data.aws_ip_ranges.s3ip-useast1.cidr_blocks}"]
+  }
+
+  tags = "${merge(map("Name","s3ec2test-s3-out"), var.tags)}"
 }

@@ -122,4 +122,26 @@ The core of the solution (in `main.tf`) is the policy attached to the IAM Instan
 
 This can be made even more precise as required - using the wildcard `List*` and `Get*` reveals quite a lot of information about the bucket and objects that an instance which just needs to be able to find and read objects won't need, so it is best to fine-tune the specific allowable resources. Similarly the resource key specified can easily be used to partition data and access to partitions of the data based on careful use of object keys.
 
-Further security can be put in place using a combination of a VPC Endpoint, and policies on the buckets themselves. By associating a VPC endpoint with the subnet containing the instance, we can put a policy on the bucket that requires (for example) "get" operations to be sourced via the VPC endpoint. This will then prevent the objects being downloaded from the AWS console, or by a privileged user from anywhere other than the subnet. An alternative would have been to _not_ use the VPC endpoint, in which case the policy would have to restrict access to the _public_ IP address range for the EC2 instances. 
+Further security can be put in place using a combination of a VPC Endpoint, and policies on the buckets themselves. By associating a VPC endpoint with the subnet containing the instance, we can put a policy on the bucket that requires (for example) "get" operations to be sourced via the VPC endpoint. This will then prevent the objects being downloaded from the AWS console, or by a privileged user from anywhere other than the subnet. An alternative would have been to _not_ use the VPC endpoint, in which case the policy would have to restrict access to the _public_ IP address range for the EC2 instances.
+
+
+# Security Notes
+In addition to the constraints around the use of S3 buckets, this project demonstrates a fairly rigorous locking down of outgoing traffic from the EC2 instance. By default, security groups do not constrain connections initiated from the instance, and this leads to a lot of fairly simplistic thinking around how to lock down such outgoing connections. The internet is _littered_ with blogs and comments saying "oh, it's easy, just whitelist services", which turns out, broadly, to not work.
+
+To begin with, this example includes the use of a VPC Endpoint for S3 access. This does _nothing_ to help with filtering outgoing traffic, all it does is help ensure that traffic remains within the AWS network rather than possibly traversing the broader internet. Traffic needs to be able to get out of the EC2 instance (past it's security group stateful firewall) and out of the subnet (past the NACL stateless firewall) before it can get routed through the VPC Endpoint, which is really just a specialised gateway.
+
+As an aside, the VPC endpoint does not have a policy on it - ideally it does, but that's beyond the scope of what I wanted to do here.
+
+Restricting outgoing access is a real problem if you want to do things like keep the EC2 instance updated and use any AWS services. To begin with, we need to crack open port 80 so that _yum_ can call out. Fortunately for at least the Amazon Linux instances, _yum_ comes wired to reach out to `http://amazonlinux.<REGION>.amazonaws.com`, and that resolves to a _somewhat_ predictable IP range (for `eu-west-1` this is probably `52.95.150.0/24` but I played it safe with `52.95.0.0/16`).
+
+Restricting 443 is a much more painful problem: calls to the AWS API from the EC2 host travel (pretty obviously) off the host to various destinations in the AWS infrastructure via 443 using HTTPS. Block 443, and you block access to the AWS API. In this example I was able to open access to S3 by whitelisting the documented CIDR blocks for S3 for both `eu-west-1` *AND* `us-east-1`. It's not clear why the latter needs to be added, but it categorically does. Ok, great, the box that this example creates can execute _yum_ and use S3... but it can't use any other services unless we identify and whitelist more IP ranges, for both the target region and `us-east-1`.
+
+Think about this for a moment. _Any_ services - IAM calls, use of KMS to encrypt data in the S3 bucket, DynamoDB calls. Blocking 443 _seriously_ hampers the ability of the host to do interesting and useful things.
+
+It is broadly feasible to find the list of required CIDR blocks, as Amazon now list them. These resources can help you along the way:
+
+ - [AWS Regions and Endpoints](https://docs.aws.amazon.com/general/latest/gr/rande.html)
+ - [AWS IP Address Ranges](https://docs.aws.amazon.com/general/latest/gr/aws-ip-ranges.html)
+ - [Terraform aws_ip_ranges](https://www.terraform.io/docs/providers/aws/d/ip_ranges.html) (this uses the IP Address Range file from above)
+
+Playing with these will show that at the time of writing there are 203 CIDR blocks we need to whitelist, 78 for `eu-west-1` and 125 for `us-east-1`. This becomes a problem because there are quite small limits on how many rules Security Groups and NACLs are allowed to have. The list could be reduced somewhat by rolling up the various smaller CIDR blocks into `/16` blocks, but at that point, you have to ask what benefit you are getting.

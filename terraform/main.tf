@@ -33,10 +33,10 @@ resource "aws_s3_bucket" "s3_closed" {
   tags          = "${merge(map("Name","s3-closed"), var.tags)}"
 }
 
-
 resource "aws_s3_bucket_policy" "s3_open" {
   bucket = "${aws_s3_bucket.s3_open.id}"
-  policy =<<POLICY
+
+  policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -58,7 +58,8 @@ POLICY
 
 resource "aws_s3_bucket_policy" "s3_closed" {
   bucket = "${aws_s3_bucket.s3_closed.id}"
-  policy =<<POLICY
+
+  policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -119,6 +120,13 @@ resource "aws_iam_policy" "s3access" {
         "${aws_s3_bucket.s3_open.arn}",
         "${aws_s3_bucket.s3_open.arn}/*"
       ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ec2:Describe*"
+      ],
+      "Resource": "*"
     }
   ]
 }
@@ -147,7 +155,8 @@ resource "aws_instance" "testhost" {
 
   vpc_security_group_ids = [
     "${aws_security_group.allow_ssh.id}",
-    "${aws_security_group.allow_http_out.id}"
+    "${aws_security_group.allow_yum_out.id}",
+    "${aws_security_group.allow_s3_out.id}"
   ]
 
   iam_instance_profile = "${aws_iam_instance_profile.testhost.name}"
