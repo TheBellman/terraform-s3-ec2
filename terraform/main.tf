@@ -156,7 +156,12 @@ resource "aws_instance" "testhost" {
   vpc_security_group_ids = [
     "${aws_security_group.allow_ssh.id}",
     "${aws_security_group.allow_yum_out.id}",
-    "${aws_security_group.allow_s3_out.id}"
+    "${aws_security_group.allow_s3_out.id}",
+    # "${aws_security_group.eu_west_1_part_1.id}",
+    # "${aws_security_group.eu_west_1_part_2.id}",
+    # "${aws_security_group.us_east_1_part_1.id}",
+    # "${aws_security_group.us_east_1_part_2.id}",
+    # "${aws_security_group.us_east_1_part_3.id}"
   ]
 
   iam_instance_profile = "${aws_iam_instance_profile.testhost.name}"
