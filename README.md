@@ -145,3 +145,15 @@ It is broadly feasible to find the list of required CIDR blocks, as Amazon now l
  - [Terraform aws_ip_ranges](https://www.terraform.io/docs/providers/aws/d/ip_ranges.html) (this uses the IP Address Range file from above)
 
 Playing with these will show that at the time of writing there are 203 CIDR blocks we need to whitelist, 78 for `eu-west-1` and 125 for `us-east-1`. This becomes a problem because there are quite small limits on how many rules Security Groups and NACLs are allowed to have. The list could be reduced somewhat by rolling up the various smaller CIDR blocks into `/16` blocks, but at that point, you have to ask what benefit you are getting.
+
+## License
+
+Copyright 2026 Little Dog Digital
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.%   
